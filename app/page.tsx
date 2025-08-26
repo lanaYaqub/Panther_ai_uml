@@ -117,48 +117,52 @@ export default function UMLGenerator() {
 	  }
 	}
 
-	const handleImproveDiagram = async () => {
-	  if (!chatInput.trim()) return
+const handleImproveDiagram = async () => {
+  if (!chatInput.trim()) return;
 
-	  try {
-		setIsGenerating(true)
+  try {
+    setIsGenerating(true);
 
-		const response = await improveUMLAction({
-		  currentUML: umlCode,
-		  userMessage: chatInput,
-		  diagramType: diagramType,
-		  originalStory: originalStory,
-		})
+    const response = await improveUMLAction({
+      currentUML: umlCode,
+      userMessage: chatInput,
+      diagramType,
+      originalStory,
+    });
 
-		if (response?.uml) {
-		  setUmlCode(response.uml)
-		  setConversation(prev => {
-			if (!prev) return null
-			return {
-			  ...prev,
-			  steps: [
-				...prev.steps,
-				{
-				  input: chatInput,
-				  umlCode: response.uml,
-				  rawResponse: response.rawText, // ✅ Store AI’s comment only
-				},
-			  ],
-			}
-		  })
-		  setChatInput('')
-		}
+    // Narrow the type: ensure it's a non-empty string
+    if (!response || typeof response.uml !== 'string' || !response.uml.trim()) {
+      alert('Failed to improve diagram.');
+      return;
+    }
 
-		else {
-		  alert('Failed to improve diagram.')
-		}
-	  } catch (error) {
-		console.error(error)
-		alert('Something went wrong')
-	  } finally {
-		setIsGenerating(false)
-	  }
-	}
+    const nextUml = response.uml; // <- guaranteed string
+
+    setUmlCode(nextUml);
+
+    setConversation(prev => {
+      if (!prev) return null;
+      return {
+        ...prev,
+        steps: [
+          ...prev.steps,
+          {
+            input: chatInput,
+            umlCode: nextUml,                // <- stays string
+            rawResponse: response.rawText ?? '',
+          },
+        ],
+      };
+    });
+
+    setChatInput('');
+  } catch (error) {
+    console.error(error);
+    alert('Something went wrong');
+  } finally {
+    setIsGenerating(false);
+  }
+};
 	
 	const handleViewClick = (umlCode: string, sourceIndex: number) => {
 	  if (!conversation) return
@@ -183,7 +187,7 @@ export default function UMLGenerator() {
 
 	
 	const downloadConversation = (
-	  conversation: typeof conversation,
+	  data: typeof conversation, 
 	  format: 'json' | 'csv'
 	) => {
 	  if (!conversation) return
